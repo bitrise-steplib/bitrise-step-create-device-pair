@@ -8,10 +8,10 @@ Creates an iPhone and Apple Watch simulator device pair
 <summary>Description</summary>
 
 Creates or finds an existing active simulator device pair between an iPhone and an Apple Watch.
-This is useful when the pre-configured device pairs on the VM image are missing or unreliable.
 
 The step looks up simulator devices by name and OS version, checks if an active pair already
 exists between them, and creates one if needed.
+
 
 </details>
 
