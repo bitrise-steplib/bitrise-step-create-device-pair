@@ -5,37 +5,32 @@ step_bundles:
   discover_simulators:
     steps:
     - script:
-          title: Determine available simulators
-          inputs:
-          - content: |
-              #!/bin/bash
-              set -eo pipefail
+        title: Determine available simulators
+        inputs:
+        - content: |
+            #!/bin/bash
+            set -eo pipefail
 
-              RUNTIMES=$(xcrun simctl list runtimes -j)
-              IOS_VERSION=$(echo "$RUNTIMES" | jq -r '[.runtimes[] | select(.platform == "iOS" and .isAvailable)] | last | .version')
-              WATCHOS_VERSION=$(echo "$RUNTIMES" | jq -r '[.runtimes[] | select(.platform == "watchOS" and .isAvailable)] | last | .version')
+            RUNTIMES=$(xcrun simctl list runtimes -j)
+            IOS_VERSION=$(echo "$RUNTIMES" | jq -r '[.runtimes[] | select(.platform == "iOS" and .isAvailable)] | last | .version')
+            WATCHOS_VERSION=$(echo "$RUNTIMES" | jq -r '[.runtimes[] | select(.platform == "watchOS" and .isAvailable)] | last | .version')
 
-              IOS_RUNTIME_ID="com.apple.CoreSimulator.SimRuntime.iOS-${IOS_VERSION//./-}"
-              WATCHOS_RUNTIME_ID="com.apple.CoreSimulator.SimRuntime.watchOS-${WATCHOS_VERSION//./-}"
+            IOS_RUNTIME_ID="com.apple.CoreSimulator.SimRuntime.iOS-${IOS_VERSION//./-}"
+            WATCHOS_RUNTIME_ID="com.apple.CoreSimulator.SimRuntime.watchOS-${WATCHOS_VERSION//./-}"
 
-              DEVICES=$(xcrun simctl list devices -j)
-              IPHONE_NAME=$(echo "$DEVICES" | jq -r --arg rt "$IOS_RUNTIME_ID" '[.devices[$rt][] | select(.isAvailable and (.name | contains("iPhone")))] | first | .name')
-              WATCH_NAME=$(echo "$DEVICES" | jq -r --arg rt "$WATCHOS_RUNTIME_ID" '[.devices[$rt][] | select(.isAvailable and (.name | contains("Watch")))] | first | .name')
+            DEVICES=$(xcrun simctl list devices -j)
+            IPHONE_NAME=$(echo "$DEVICES" | jq -r --arg rt "$IOS_RUNTIME_ID" '[.devices[$rt][] | select(.isAvailable and (.name | contains("iPhone")))] | first | .name')
+            WATCH_NAME=$(echo "$DEVICES" | jq -r --arg rt "$WATCHOS_RUNTIME_ID" '[.devices[$rt][] | select(.isAvailable and (.name | contains("Watch")))] | first | .name')
 
-              echo "Selected: $IPHONE_NAME ($IOS_VERSION) + $WATCH_NAME ($WATCHOS_VERSION)"
-              envman add --key E2E_IPHONE_DEVICE --value "$IPHONE_NAME"
-              envman add --key E2E_IOS_VERSION --value "$IOS_VERSION"
-              envman add --key E2E_WATCH_DEVICE --value "$WATCH_NAME"
-              envman add --key E2E_WATCHOS_VERSION --value "$WATCHOS_VERSION"
+            echo "Selected: $IPHONE_NAME ($IOS_VERSION) + $WATCH_NAME ($WATCHOS_VERSION)"
+            envman add --key E2E_IPHONE_DEVICE --value "$IPHONE_NAME"
+            envman add --key E2E_IOS_VERSION --value "$IOS_VERSION"
+            envman add --key E2E_WATCH_DEVICE --value "$WATCH_NAME"
+            envman add --key E2E_WATCHOS_VERSION --value "$WATCHOS_VERSION"
 
   run_step:
     steps:
-    - path::./:
-          inputs:
-          - iphone_device: $E2E_IPHONE_DEVICE
-          - ios_version: $E2E_IOS_VERSION
-          - watch_device: $E2E_WATCH_DEVICE
-          - watchos_version: $E2E_WATCHOS_VERSION
+    - path::./: { }
 
 workflows:
   test_create_new_pair:
@@ -46,29 +41,29 @@ workflows:
     - bundle::discover_simulators: { }
     - bundle::run_step: { }
     - script:
-          title: Verify outputs
-          inputs:
-          - content: |
-              #!/bin/bash
-              set -eo pipefail
+        title: Verify outputs
+        inputs:
+        - content: |
+            #!/bin/bash
+            set -eo pipefail
 
-              if [ -z "$BITRISE_DEVICE_PAIR_UDID" ]; then
-                echo "ERROR: BITRISE_DEVICE_PAIR_UDID is empty"
-                exit 1
-              fi
+            if [ -z "$BITRISE_DEVICE_PAIR_UDID" ]; then
+              echo "ERROR: BITRISE_DEVICE_PAIR_UDID is empty"
+              exit 1
+            fi
 
-              echo "Device Pair ID: $BITRISE_DEVICE_PAIR_UDID"
+            echo "Device Pair ID: $BITRISE_DEVICE_PAIR_UDID"
 
-              STATE=$(xcrun simctl list pairs -j | jq -r --arg id "$BITRISE_DEVICE_PAIR_UDID" '.pairs[$id].state // empty')
-              if [ -z "$STATE" ]; then
-                echo "ERROR: Pair $BITRISE_DEVICE_PAIR_UDID not found in simctl list pairs"
-                exit 1
-              fi
-              if [[ "$STATE" != *active* ]]; then
-                echo "ERROR: Pair $BITRISE_DEVICE_PAIR_UDID is not active (state: $STATE)"
-                exit 1
-              fi
-              echo "Pair verified: active"
+            STATE=$(xcrun simctl list pairs -j | jq -r --arg id "$BITRISE_DEVICE_PAIR_UDID" '.pairs[$id].state // empty')
+            if [ -z "$STATE" ]; then
+              echo "ERROR: Pair $BITRISE_DEVICE_PAIR_UDID not found in simctl list pairs"
+              exit 1
+            fi
+            if [[ "$STATE" != *active* ]]; then
+              echo "ERROR: Pair $BITRISE_DEVICE_PAIR_UDID is not active (state: $STATE)"
+              exit 1
+            fi
+            echo "Pair verified: active"
 
   test_existing_pair_reuse:
     description: >-
@@ -78,25 +73,25 @@ workflows:
     - bundle::discover_simulators: { }
     - bundle::run_step: { }
     - script:
-          title: Save first pair ID
-          inputs:
-          - content: |
-              #!/bin/bash
-              set -eo pipefail
-              envman add --key FIRST_PAIR_ID --value "$BITRISE_DEVICE_PAIR_UDID"
+        title: Save first pair ID
+        inputs:
+        - content: |
+            #!/bin/bash
+            set -eo pipefail
+            envman add --key FIRST_PAIR_ID --value "$BITRISE_DEVICE_PAIR_UDID"
     - bundle::run_step: { }
     - script:
-          title: Verify same pair ID returned
-          inputs:
-          - content: |
-              #!/bin/bash
-              set -eo pipefail
+        title: Verify same pair ID returned
+        inputs:
+        - content: |
+            #!/bin/bash
+            set -eo pipefail
 
-              if [ "$FIRST_PAIR_ID" != "$BITRISE_DEVICE_PAIR_UDID" ]; then
-                echo "ERROR: Second run returned different pair ID"
-                echo "  First:  $FIRST_PAIR_ID"
-                echo "  Second: $BITRISE_DEVICE_PAIR_UDID"
-                exit 1
-              fi
+            if [ "$FIRST_PAIR_ID" != "$BITRISE_DEVICE_PAIR_UDID" ]; then
+              echo "ERROR: Second run returned different pair ID"
+              echo "  First:  $FIRST_PAIR_ID"
+              echo "  Second: $BITRISE_DEVICE_PAIR_UDID"
+              exit 1
+            fi
 
-              echo "Pair reuse verified: $BITRISE_DEVICE_PAIR_UDID"
+            echo "Pair reuse verified: $BITRISE_DEVICE_PAIR_UDID"

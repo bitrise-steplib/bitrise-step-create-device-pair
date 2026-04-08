@@ -9,14 +9,14 @@ workflows:
   e2e:
     steps:
     - git::https://github.com/bitrise-steplib/steps-check.git:
-          inputs:
-          - workflow: e2e
+        inputs:
+        - workflow: e2e
 
   generate_readme:
     steps:
     - git::https://github.com/bitrise-steplib/steps-readme-generator.git@main:
-          inputs:
-          - example_section: docs/examples.md
+        inputs:
+        - example_section: docs/examples.md
 
   sample:
     envs:
@@ -25,21 +25,15 @@ workflows:
     - WATCH_DEVICE: Apple Watch Series 11 (46mm)
     - WATCHOS_VERSION: "26.4"
     steps:
-    - path::./:
-          title: Create Device Pair
-          inputs:
-          - iphone_device: $IPHONE_DEVICE
-          - ios_version: $IOS_VERSION
-          - watch_device: $WATCH_DEVICE
-          - watchos_version: $WATCHOS_VERSION
+    - path::./: { }
     - script:
-          title: Verify output
-          inputs:
-          - content: |
-              #!/bin/bash
-              set -ex
-              echo "Device Pair ID: $BITRISE_DEVICE_PAIR_UDID"
-              if [ -z "$BITRISE_DEVICE_PAIR_UDID" ]; then
-                echo "ERROR: BITRISE_DEVICE_PAIR_UDID is empty"
-                exit 1
-              fi
+        title: Verify output
+        inputs:
+        - content: |
+            #!/bin/bash
+            set -ex
+            echo "Device Pair ID: $BITRISE_DEVICE_PAIR_UDID"
+            if [ -z "$BITRISE_DEVICE_PAIR_UDID" ]; then
+              echo "ERROR: BITRISE_DEVICE_PAIR_UDID is empty"
+              exit 1
+            fi
