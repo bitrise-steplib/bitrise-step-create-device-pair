@@ -12,7 +12,6 @@ Creates or finds an existing active simulator device pair between an iPhone and 
 The step looks up simulator devices by name and OS version, checks if an active pair already
 exists between them, and creates one if needed.
 
-
 </details>
 
 ## 🧩 Get started
