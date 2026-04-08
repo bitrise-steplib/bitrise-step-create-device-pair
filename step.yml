@@ -23,7 +23,7 @@ toolkit:
     package_name: github.com/bitrise-steplib/bitrise-step-create-device-pair
 
 inputs:
-- iphone_device:
+- iphone_device: Bitrise iOS default
   opts:
     title: iPhone device name
     summary: The name of the iPhone simulator device (e.g. "iPhone 17 Pro")
@@ -39,7 +39,7 @@ inputs:
       The iOS runtime version. Use dot notation (e.g. "18.4", "17.5").
     is_required: true
 
-- watch_device:
+- watch_device: Apple Watch Series 11 (46mm)
   opts:
     title: Watch device name
     summary: The name of the Apple Watch simulator device (e.g. "Apple Watch Series 11 (46mm)")
