@@ -30,7 +30,12 @@ step_bundles:
 
   run_step:
     steps:
-    - path::./: { }
+    - path::./:
+        inputs:
+        - iphone_device: $E2E_IPHONE_DEVICE
+        - ios_version: $E2E_IOS_VERSION
+        - watch_device: $E2E_WATCH_DEVICE
+        - watchos_version: $E2E_WATCHOS_VERSION
 
 workflows:
   test_create_new_pair:
