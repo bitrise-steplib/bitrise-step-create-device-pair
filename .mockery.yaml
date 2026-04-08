@@ -1,0 +1,35 @@
+all: false
+force-file-write: true
+formatter: goimports
+generate: true
+include-auto-generated: false
+require-template-schema-exists: false
+template: testify
+packages:
+  github.com/bitrise-io/go-xcode/v2/destination:
+    config:
+      all: false
+    interfaces:
+      DeviceFinder:
+        config:
+          dir: step
+          pkgname: step
+          filename: mock_DeviceFinder_test.go
+  github.com/bitrise-io/go-steputils/v2/stepconf:
+    config:
+      all: false
+    interfaces:
+      InputParser:
+        config:
+          dir: step
+          pkgname: step
+          filename: mock_InputParser_test.go
+  github.com/bitrise-io/go-utils/v2/env:
+    config:
+      all: false
+    interfaces:
+      Repository:
+        config:
+          dir: step
+          pkgname: step
+          filename: mock_EnvRepository_test.go
