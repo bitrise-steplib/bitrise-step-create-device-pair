@@ -1,6 +1,6 @@
 module github.com/bitrise-steplib/bitrise-step-create-device-pair
 
-go 1.25.5
+go 1.24
 
 require (
 	github.com/bitrise-io/go-steputils/v2 v2.0.0-alpha.49
