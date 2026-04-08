@@ -21,7 +21,7 @@ github.com/bitrise-io/go-utils/v2/parseutil
 github.com/bitrise-io/go-utils/v2/pathutil
 github.com/bitrise-io/go-utils/v2/retry
 github.com/bitrise-io/go-utils/v2/retryhttp
-# github.com/bitrise-io/go-xcode/v2 v2.0.0-alpha.82
+# github.com/bitrise-io/go-xcode/v2 v2.0.0-alpha.82.0.20260408221240-e092e4be3603
 ## explicit; go 1.22
 github.com/bitrise-io/go-xcode/v2/destination
 github.com/bitrise-io/go-xcode/v2/xcodeversion
@@ -37,9 +37,13 @@ github.com/hashicorp/go-retryablehttp
 # github.com/hashicorp/go-version v1.6.0
 ## explicit
 github.com/hashicorp/go-version
+# github.com/kr/pretty v0.3.1
+## explicit; go 1.12
 # github.com/pmezard/go-difflib v1.0.0
 ## explicit
 github.com/pmezard/go-difflib/difflib
+# github.com/rogpeppe/go-internal v1.10.0
+## explicit; go 1.19
 # github.com/stretchr/objx v0.5.2
 ## explicit; go 1.20
 github.com/stretchr/objx
@@ -49,6 +53,8 @@ github.com/stretchr/testify/assert
 github.com/stretchr/testify/assert/yaml
 github.com/stretchr/testify/mock
 github.com/stretchr/testify/require
+# gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c
+## explicit; go 1.11
 # gopkg.in/yaml.v3 v3.0.1
 ## explicit
 gopkg.in/yaml.v3

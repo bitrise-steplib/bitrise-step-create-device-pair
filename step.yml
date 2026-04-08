@@ -55,6 +55,19 @@ inputs:
       The watchOS runtime version. Use dot notation (e.g. "11.5", "26.0").
     is_required: true
 
+- delete_blocking_pairs: "true"
+  opts:
+    title: Delete blocking pairs on capacity error
+    summary: Delete existing pairs blocking creation of the new pair
+    description: |
+      When true and pairing fails because a device has reached its maximum number of
+      allowed pairs, the step deletes the conflicting pair(s) and retries.
+      When false, the step fails immediately on a capacity error.
+    is_required: true
+    value_options:
+    - "true"
+    - "false"
+
 outputs:
 - BITRISE_DEVICE_PAIR_UDID:
   opts:

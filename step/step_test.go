@@ -14,6 +14,8 @@ import (
 type mockPairManager struct {
 	pairLists          []destination.PairList
 	listCallCount      int
+	createCallResults  []createCallResult
+	createCallCount    int
 	createdID          string
 	createErr          error
 	createPairCalled   bool
@@ -21,6 +23,14 @@ type mockPairManager struct {
 	createPhoneUDID    string
 	activatePairCalled bool
 	activateErr        error
+	deletePairCalled   bool
+	deletedPairIDs     []string
+	deleteErr          error
+}
+
+type createCallResult struct {
+	id  string
+	err error
 }
 
 func (m *mockPairManager) ListPairs() (destination.PairList, error) {
@@ -36,6 +46,14 @@ func (m *mockPairManager) CreatePair(watchUDID, phoneUDID string) (string, error
 	m.createPairCalled = true
 	m.createWatchUDID = watchUDID
 	m.createPhoneUDID = phoneUDID
+
+	if m.createCallCount < len(m.createCallResults) {
+		result := m.createCallResults[m.createCallCount]
+		m.createCallCount++
+		return result.id, result.err
+	}
+	m.createCallCount++
+
 	if m.createErr != nil {
 		return "", m.createErr
 	}
@@ -45,6 +63,12 @@ func (m *mockPairManager) CreatePair(watchUDID, phoneUDID string) (string, error
 func (m *mockPairManager) ActivatePair(_ string) error {
 	m.activatePairCalled = true
 	return m.activateErr
+}
+
+func (m *mockPairManager) Unpair(pairUDID string) error {
+	m.deletePairCalled = true
+	m.deletedPairIDs = append(m.deletedPairIDs, pairUDID)
+	return m.deleteErr
 }
 
 // Test helpers
@@ -66,12 +90,13 @@ func emptyPairList() destination.PairList {
 func defaultInputParser(t *testing.T) *MockInputParser {
 	t.Helper()
 	parser := NewMockInputParser(t)
-	parser.EXPECT().Parse(mock.Anything).RunAndReturn(func(input interface{}) error {
+	parser.EXPECT().Parse(mock.Anything).RunAndReturn(func(input any) error {
 		i := input.(*Input)
 		i.IPhoneDevice = "iPhone 17 Pro"
 		i.IOSVersion = "18.4"
 		i.WatchDevice = "Apple Watch Series 11 (46mm)"
 		i.WatchOS = "11.5"
+		i.DeleteBlockingPairs = true
 		return nil
 	})
 	return parser
@@ -217,4 +242,53 @@ func TestRun_UnavailablePairSkippedCreatesNew(t *testing.T) {
 
 	require.True(t, pairMgr.createPairCalled)
 	require.False(t, pairMgr.activatePairCalled)
+}
+
+func TestRun_BlockedPairDeletedAndRetried(t *testing.T) {
+	// First CreatePair fails with capacity error; a blocking pair (same phone) is found,
+	// deleted, and creation is retried successfully.
+	pairMgr := &mockPairManager{
+		pairLists: []destination.PairList{
+			emptyPairList(), // findExistingPair
+			pairList("blocking-pair-id", "phone-uuid-1", "other-watch", "(active, disconnected)"), // deleteBlockingPairs
+			pairList("new-pair-id", "phone-uuid-1", "watch-uuid-1", "(active, disconnected)"),     // verify after creation
+		},
+		createCallResults: []createCallResult{
+			{err: fmt.Errorf("maximum number of supported devices")},
+			{id: "new-pair-id"},
+		},
+	}
+	envRepo := NewMockRepository(t)
+	envRepo.EXPECT().Set("BITRISE_DEVICE_PAIR_UDID", "new-pair-id").Return(nil)
+	envRepo.EXPECT().Set("BITRISE_IPHONE_UDID", "phone-uuid-1").Return(nil)
+	envRepo.EXPECT().Set("BITRISE_WATCH_UDID", "watch-uuid-1").Return(nil)
+
+	s := NewDevicePairerStep(defaultInputParser(t), log.NewLogger(), defaultDeviceFinder(t), pairMgr, envRepo)
+	require.NoError(t, runAll(t, s))
+
+	require.True(t, pairMgr.deletePairCalled)
+	require.Equal(t, []string{"blocking-pair-id"}, pairMgr.deletedPairIDs)
+	require.Equal(t, 2, pairMgr.createCallCount)
+}
+
+func TestRun_BlockedPairDeleteDisabled(t *testing.T) {
+	// CreatePair fails with capacity error but delete_blocking_pairs=false, so it errors immediately.
+	pairMgr := &mockPairManager{
+		pairLists: []destination.PairList{emptyPairList()},
+		createCallResults: []createCallResult{
+			{err: fmt.Errorf("maximum number of supported devices")},
+		},
+	}
+
+	// Call Run directly with a pre-built PairPlan; inputParser and deviceFinder are not used.
+	s := NewDevicePairerStep(NewMockInputParser(t), log.NewLogger(), NewMockDeviceFinder(t), pairMgr, NewMockRepository(t))
+	config := PairPlan{
+		PhoneUDID:           "phone-uuid-1",
+		WatchUDID:           "watch-uuid-1",
+		DeleteBlockingPairs: false,
+	}
+	_, err := s.Run(config)
+
+	require.Error(t, err)
+	require.False(t, pairMgr.deletePairCalled)
 }

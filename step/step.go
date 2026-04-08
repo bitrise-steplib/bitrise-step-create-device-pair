@@ -2,6 +2,7 @@ package step
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/bitrise-io/go-steputils/v2/stepconf"
 	"github.com/bitrise-io/go-utils/v2/env"
@@ -11,16 +12,18 @@ import (
 
 // Input holds the raw step inputs parsed from environment variables.
 type Input struct {
-	IPhoneDevice string `env:"iphone_device,required"`
-	IOSVersion   string `env:"ios_version,required"`
-	WatchDevice  string `env:"watch_device,required"`
-	WatchOS      string `env:"watchos_version,required"`
+	IPhoneDevice        string `env:"iphone_device,required"`
+	IOSVersion          string `env:"ios_version,required"`
+	WatchDevice         string `env:"watch_device,required"`
+	WatchOS             string `env:"watchos_version,required"`
+	DeleteBlockingPairs bool   `env:"delete_blocking_pairs"`
 }
 
-// SimulatorSet holds resolved device UDIDs after input parsing and device lookup.
-type SimulatorSet struct {
-	PhoneUDID string
-	WatchUDID string
+// PairPlan holds resolved device UDIDs and run options after input parsing.
+type PairPlan struct {
+	PhoneUDID           string
+	WatchUDID           string
+	DeleteBlockingPairs bool
 }
 
 // Result holds the outcome of the step run.
@@ -34,6 +37,7 @@ type pairManager interface {
 	ListPairs() (destination.PairList, error)
 	CreatePair(watchUDID, phoneUDID string) (string, error)
 	ActivatePair(pairUDID string) error
+	Unpair(pairUDID string) error
 }
 
 // DevicePairerStep is the main step struct with injected dependencies.
@@ -63,10 +67,10 @@ func NewDevicePairerStep(
 }
 
 // ProcessConfig parses step inputs and resolves simulator device UDIDs.
-func (s DevicePairerStep) ProcessConfig() (SimulatorSet, error) {
+func (s DevicePairerStep) ProcessConfig() (PairPlan, error) {
 	var input Input
 	if err := s.inputParser.Parse(&input); err != nil {
-		return SimulatorSet{}, fmt.Errorf("parse inputs: %w", err)
+		return PairPlan{}, fmt.Errorf("parse inputs: %w", err)
 	}
 
 	s.logger.Println()
@@ -75,25 +79,27 @@ func (s DevicePairerStep) ProcessConfig() (SimulatorSet, error) {
 	s.logger.Printf("- iOS version: %s", input.IOSVersion)
 	s.logger.Printf("- Watch device: %s", input.WatchDevice)
 	s.logger.Printf("- watchOS version: %s", input.WatchOS)
+	s.logger.Printf("- Delete blocking pairs: %v", input.DeleteBlockingPairs)
 
 	phoneUDID, err := s.findDevice(input.IPhoneDevice, input.IOSVersion, destination.IOSSimulator)
 	if err != nil {
-		return SimulatorSet{}, fmt.Errorf("find iPhone simulator: %w", err)
+		return PairPlan{}, fmt.Errorf("find iPhone simulator: %w", err)
 	}
 
 	watchUDID, err := s.findDevice(input.WatchDevice, input.WatchOS, destination.WatchOSSimulator)
 	if err != nil {
-		return SimulatorSet{}, fmt.Errorf("find Watch simulator: %w", err)
+		return PairPlan{}, fmt.Errorf("find Watch simulator: %w", err)
 	}
 
-	return SimulatorSet{
-		PhoneUDID: phoneUDID,
-		WatchUDID: watchUDID,
+	return PairPlan{
+		PhoneUDID:           phoneUDID,
+		WatchUDID:           watchUDID,
+		DeleteBlockingPairs: input.DeleteBlockingPairs,
 	}, nil
 }
 
 // Run finds or creates an active simulator device pair.
-func (s DevicePairerStep) Run(config SimulatorSet) (Result, error) {
+func (s DevicePairerStep) Run(config PairPlan) (Result, error) {
 	pairUDID, inactive, err := s.findExistingPair(config.PhoneUDID, config.WatchUDID)
 	if err != nil {
 		return Result{}, err
@@ -107,7 +113,7 @@ func (s DevicePairerStep) Run(config SimulatorSet) (Result, error) {
 	case pairUDID != "":
 		// already active, nothing to do
 	default:
-		pairUDID, err = s.createPair(config.PhoneUDID, config.WatchUDID)
+		pairUDID, err = s.createPair(config.PhoneUDID, config.WatchUDID, config.DeleteBlockingPairs)
 		if err != nil {
 			return Result{}, err
 		}
@@ -192,12 +198,24 @@ func (s DevicePairerStep) activatePair(pairUDID string) error {
 	return nil
 }
 
-func (s DevicePairerStep) createPair(phoneUDID, watchUDID string) (string, error) {
+func (s DevicePairerStep) createPair(phoneUDID, watchUDID string, deleteBlocking bool) (string, error) {
 	s.logger.Printf("Creating a new device pair...")
 
 	pairUDID, err := s.pairManager.CreatePair(watchUDID, phoneUDID)
 	if err != nil {
-		return "", fmt.Errorf("create device pair: %w", err)
+		if !deleteBlocking || !strings.Contains(err.Error(), "maximum number") {
+			return "", fmt.Errorf("create device pair: %w", err)
+		}
+
+		s.logger.Warnf("Pairing failed due to capacity limit, clearing blocking pairs...")
+		if deleteErr := s.deleteBlockingPairs(phoneUDID, watchUDID); deleteErr != nil {
+			return "", fmt.Errorf("create device pair: %w (failed to clear blocking pairs: %s)", err, deleteErr)
+		}
+
+		pairUDID, err = s.pairManager.CreatePair(watchUDID, phoneUDID)
+		if err != nil {
+			return "", fmt.Errorf("create device pair after clearing blocking pairs: %w", err)
+		}
 	}
 
 	s.logger.Println()
@@ -219,4 +237,23 @@ func (s DevicePairerStep) createPair(phoneUDID, watchUDID string) (string, error
 	s.logger.Donef("Pair created and active: %s", pairUDID)
 
 	return pairUDID, nil
+}
+
+func (s DevicePairerStep) deleteBlockingPairs(phoneUDID, watchUDID string) error {
+	pairList, err := s.pairManager.ListPairs()
+	if err != nil {
+		return fmt.Errorf("list blocking pairs: %w", err)
+	}
+
+	for id, pair := range pairList.Pairs {
+		if pair.Phone.UDID != phoneUDID && pair.Watch.UDID != watchUDID {
+			continue
+		}
+		s.logger.Warnf("Deleting blocking pair %s (phone: %s, watch: %s)", id, pair.Phone.UDID, pair.Watch.UDID)
+		if err := s.pairManager.Unpair(id); err != nil {
+			return fmt.Errorf("delete pair %s: %w", id, err)
+		}
+	}
+
+	return nil
 }
