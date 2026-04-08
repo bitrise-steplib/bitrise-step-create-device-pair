@@ -57,7 +57,7 @@ You can also run this step directly with [Bitrise CLI](https://github.com/bitris
 | `ios_version` | The iOS runtime version. Use dot notation (e.g. "18.4", "17.5").  | required |  |
 | `watch_device` | The simulator device name as shown in `xcrun simctl list devices` and listed on bitrise.io/stacks.  | required |  |
 | `watchos_version` | The watchOS runtime version. Use dot notation (e.g. "11.5", "26.0").  | required |  |
-| `delete_blocking_pairs` | When true and pairing fails because a device has reached its maximum number of allowed pairs, the step deletes the conflicting pair(s) and retries. When false, the step fails immediately on a capacity error.  | required | true |
+| `delete_blocking_pairs` | When true and pairing fails because a device has reached its maximum number of allowed pairs, the step deletes the conflicting pair(s) and retries. When false, the step fails immediately on a capacity error.  | required | `true` |
 </details>
 
 <details>
