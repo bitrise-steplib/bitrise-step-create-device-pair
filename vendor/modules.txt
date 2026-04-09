@@ -21,7 +21,7 @@ github.com/bitrise-io/go-utils/v2/parseutil
 github.com/bitrise-io/go-utils/v2/pathutil
 github.com/bitrise-io/go-utils/v2/retry
 github.com/bitrise-io/go-utils/v2/retryhttp
-# github.com/bitrise-io/go-xcode/v2 v2.0.0-alpha.82.0.20260408221240-e092e4be3603
+# github.com/bitrise-io/go-xcode/v2 v2.0.0-alpha.83
 ## explicit; go 1.22
 github.com/bitrise-io/go-xcode/v2/destination
 github.com/bitrise-io/go-xcode/v2/xcodeversion
