@@ -72,14 +72,7 @@ func (s DevicePairerStep) ProcessConfig() (PairPlan, error) {
 	if err := s.inputParser.Parse(&input); err != nil {
 		return PairPlan{}, fmt.Errorf("parse inputs: %w", err)
 	}
-
-	s.logger.Println()
-	s.logger.Infof("Inputs:")
-	s.logger.Printf("- iPhone device: %s", input.IPhoneDevice)
-	s.logger.Printf("- iOS version: %s", input.IOSVersion)
-	s.logger.Printf("- Watch device: %s", input.WatchDevice)
-	s.logger.Printf("- watchOS version: %s", input.WatchOS)
-	s.logger.Printf("- Delete blocking pairs: %v", input.DeleteBlockingPairs)
+	stepconf.Print(input)
 
 	phoneUDID, err := s.findDevice(input.IPhoneDevice, input.IOSVersion, destination.IOSSimulator)
 	if err != nil {

@@ -1,7 +1,7 @@
 ### Create a device pair for testing
 
 ```yaml
-- git::https://github.com/bitrise-steplib/bitrise-step-create-device-pair.git:
+- create-device-pair@1:
     inputs:
       - iphone_device: iPhone 17 Pro
       - ios_version: "18.4"
@@ -12,7 +12,7 @@
 ### Use the pair ID in a subsequent step
 
 ```yaml
-- git::https://github.com/bitrise-steplib/bitrise-step-create-device-pair.git:
+- create-device-pair@1:
     inputs:
       - iphone_device: iPhone 17 Pro
       - ios_version: "18.4"

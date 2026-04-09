@@ -19,13 +19,14 @@ workflows:
         - example_section: docs/examples.md
 
   sample:
-    envs:
-    - IPHONE_DEVICE: iPhone 17 Pro Max
-    - IOS_VERSION: "26.4"
-    - WATCH_DEVICE: Apple Watch Series 11 (46mm)
-    - WATCHOS_VERSION: "26.4"
     steps:
-    - path::./: { }
+    - path::./:
+        run_if: true
+        inputs:
+        - iphone_device: iPhone 17 Pro Max
+        - ios_version: "26.4"
+        - watch_device: Apple Watch Series 11 (46mm)
+        - watchos_version: "26.4"
     - script:
         title: Verify output
         inputs:
