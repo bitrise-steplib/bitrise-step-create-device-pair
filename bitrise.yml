@@ -1,0 +1,40 @@
+format_version: "15"
+default_step_lib_source: https://github.com/bitrise-io/bitrise-steplib.git
+
+workflows:
+  check:
+    steps:
+    - git::https://github.com/bitrise-steplib/steps-check.git: { }
+
+  e2e:
+    steps:
+    - git::https://github.com/bitrise-steplib/steps-check.git:
+        inputs:
+        - workflow: e2e
+
+  generate_readme:
+    steps:
+    - git::https://github.com/bitrise-steplib/steps-readme-generator.git@main:
+        inputs:
+        - example_section: docs/examples.md
+
+  sample:
+    steps:
+    - path::./:
+        run_if: true
+        inputs:
+        - iphone_device: iPhone 17 Pro Max
+        - ios_version: "26.4"
+        - watch_device: Apple Watch Series 11 (46mm)
+        - watchos_version: "26.4"
+    - script:
+        title: Verify output
+        inputs:
+        - content: |
+            #!/bin/bash
+            set -ex
+            echo "Device Pair ID: $BITRISE_DEVICE_PAIR_UDID"
+            if [ -z "$BITRISE_DEVICE_PAIR_UDID" ]; then
+              echo "ERROR: BITRISE_DEVICE_PAIR_UDID is empty"
+              exit 1
+            fi
