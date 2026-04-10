@@ -23,7 +23,7 @@ You can also run this step directly with [Bitrise CLI](https://github.com/bitris
 ### Create a device pair for testing
 
 ```yaml
-- create-device-pair@1:
+- xcode-create-device-pair@1:
     inputs:
       - iphone_device: iPhone 17 Pro
       - ios_version: "18.4"
@@ -34,7 +34,7 @@ You can also run this step directly with [Bitrise CLI](https://github.com/bitris
 ### Use the pair ID in a subsequent step
 
 ```yaml
-- create-device-pair@1:
+- xcode-create-device-pair@1:
     inputs:
       - iphone_device: iPhone 17 Pro
       - ios_version: "18.4"
